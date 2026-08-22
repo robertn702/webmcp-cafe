@@ -1,6 +1,7 @@
 {
   "name": "@webmcp-today/mcp-bridge",
-  "version": "0.3.0",
+  "mcpName": "io.github.robertn702/webmcp-today",
+  "version": "0.3.1",
   "description": "MCP server for the WebMCP Today registry and local browser bridge — manage packages and list or execute live WebMCP tools",
   "type": "module",
   "license": "MIT",

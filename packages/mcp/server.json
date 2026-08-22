@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.robertn702/webmcp-today",
+  "title": "WebMCP Today",
+  "description": "Your agent gets trustworthy tools on sites without WebMCP — data-only packages you approve.",
+  "websiteUrl": "https://webmcp.today",
+  "repository": {
+    "url": "https://github.com/robertn702/webmcp-today",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@webmcp-today/mcp-bridge",
+      "version": "0.3.1",
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "WEBMCP_TODAY_API_KEY",
+          "description": "Optional WebMCP Today API key for publishing and package pins",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
