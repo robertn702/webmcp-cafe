@@ -257,7 +257,7 @@ export function buildRequest(
   return { url: url.toString(), method: endpoint.method, headers, body };
 }
 
-interface FetchOutcome {
+export interface FetchOutcome {
   status: number;
   ok: boolean;
   text: string;

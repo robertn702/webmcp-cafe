@@ -1,6 +1,6 @@
 # Release Security Runbook
 
-Two release trust boundaries exist in this repository.
+Three release trust boundaries exist in this repository.
 
 The extension ZIP workflow (`.github/workflows/release-extension.yml`) re-runs
 the test suite on an `extension-v*` tag, builds the ZIP, and creates or updates
@@ -15,6 +15,11 @@ It authenticates through GitHub Actions OIDC Trusted Publishing, so no npm token
 exists anywhere in the repository or environment, and npm records publish
 provenance automatically. The publish job holds only `contents: read` and
 `id-token: write`, and every action is pinned to a full commit SHA.
+
+The first `@webmcp-today/engine` publication is a one-time human-run bootstrap
+using the maintainer's npm credentials and the reviewed commands below. It does
+not use the OIDC workflow, so the publisher must verify the exact checkout and
+tarball contents before approving the command.
 
 ## Checksum scope
 
@@ -72,6 +77,32 @@ tags"). An unreviewed branch copy of the workflow never reaches the
 environment, and the required reviewer is the last line of defense for a
 legitimate tag run. Review the exact workflow file being executed before
 approving any run.
+
+## First engine publication
+
+The proposed first version is `@webmcp-today/engine@0.1.0`. This first bootstrap
+is a human-run npm publication; do not add the engine to the automated OIDC
+workflow until a later, separately reviewed release process requires it.
+
+Before publishing, confirm that `@webmcp-today/schema@0.3.0` is public (the
+engine's exact runtime dependency), the reviewed commit is checked out, and the
+package gate passes:
+
+```bash
+bun run check:engine-package
+(cd packages/engine && npm publish --dry-run --access public)
+```
+
+The human publisher must be authenticated to npm with permission to publish the
+`@webmcp-today` scope and must inspect the dry-run tarball before running this
+exact command from `packages/engine`:
+
+```bash
+npm publish --access public
+```
+
+ROB-216 prepares this command only. It does not publish, release, merge, or
+deploy `@webmcp-today/engine`.
 
 ### One-time npm Trusted Publisher configuration
 

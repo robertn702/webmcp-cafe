@@ -13,6 +13,7 @@
     "typecheck": "turbo typecheck",
     "lint": "eslint . --max-warnings 0",
     "test": "turbo test",
+    "check:engine-package": "bun scripts/check-engine-package.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "changeset": "changeset",
