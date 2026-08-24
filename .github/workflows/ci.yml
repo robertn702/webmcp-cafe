@@ -30,6 +30,8 @@ jobs:
       # publish time.
       - run: node --test scripts/check-npm-release.test.mjs
 
+      - run: bun run check:engine-package
+
       # Uses the committed development public key. Release builds override it
       # with their separate key, so this artifact is only for build inspection.
       # NOTE: `bun run --filter` (turbo syntax) does NOT scope the cwd in plain
