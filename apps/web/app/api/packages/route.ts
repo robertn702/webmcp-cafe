@@ -13,14 +13,16 @@ import {
 } from "@/lib/http";
 import { insertPackage } from "@/lib/mutations";
 
-/** GET /api/packages?domain=&page=&pageSize= — browse the registry (latest version of each). */
+/** GET /api/packages?domain=&q=&page=&pageSize= — browse the registry (latest version of each). */
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
   const domain = searchParams.get("domain") ?? undefined;
+  const q = searchParams.get("q")?.trim();
+  if (q && q.length > 200) return withLlmsLink(jsonError(400, "q must be at most 200 characters"));
 
-  const { packages, total } = await listPackages({ domain, page, pageSize });
+  const { packages, total } = await listPackages({ domain, q, page, pageSize });
   return withLlmsLink(NextResponse.json({ packages, total, page, pageSize }));
 }
 
