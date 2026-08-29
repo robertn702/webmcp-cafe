@@ -6,6 +6,7 @@ import {
 import { installs, packages, packageVersions, user } from "@webmcp-today/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "./db";
+import { packagePageByQuery } from "./package-query";
 import { serializePackage } from "./serialize";
 
 type PackageRow = typeof packages.$inferSelect;
@@ -80,14 +81,14 @@ export async function hydratePackages(packageRows: PackageRow[]): Promise<WebMcp
 
 export async function listPackages(opts: {
   domain?: string;
+  q?: string;
   page: number;
   pageSize: number;
 }): Promise<{ packages: WebMcpPackage[]; total: number }> {
   const where = opts.domain ? eq(packages.domain, opts.domain) : undefined;
   const rows = await db.select().from(packages).where(where).orderBy(desc(packages.updatedAt));
   const valid = await hydratePackages(rows);
-  const start = (opts.page - 1) * opts.pageSize;
-  return { packages: valid.slice(start, start + opts.pageSize), total: valid.length };
+  return packagePageByQuery(valid, opts.q, opts.page, opts.pageSize);
 }
 
 export async function getPackageById(id: string): Promise<WebMcpPackage | null> {

@@ -7,6 +7,54 @@ registers their tools on matching pages.
 
 The registry is live at [webmcp.today](https://webmcp.today).
 
+## OpenAI WebMCP Challenge: Judge Testing
+
+The live site now registers four read-only WebMCP tools directly from
+`webmcp.today`. These tools require no WebMCP Today extension or local bridge.
+
+### Test in ChatGPT desktop
+
+1. Use an up-to-date ChatGPT desktop app and a model with WebMCP enabled.
+2. Open [https://webmcp.today](https://webmcp.today) in ChatGPT's in-app browser.
+3. Ask ChatGPT to use the site's tools with one of the sample prompts below.
+
+### Test in Chrome 149+
+
+1. Open `chrome://flags/#enable-webmcp-testing`, enable WebMCP testing, and relaunch Chrome.
+2. Open [https://webmcp.today](https://webmcp.today).
+3. Use Chrome's WebMCP-capable agent or tool inspector to discover and invoke the site tools.
+
+### Site tool inventory
+
+| Tool                | Purpose                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `search_packages`   | Search all currently servable registry packages by package metadata or tool text, with optional domain filtering. |
+| `get_package`       | Return the latest served package document for a package ID.                                                       |
+| `compare_packages`  | Compare two to four packages, including common and package-unique tool names.                                     |
+| `verify_site_tools` | Show which registry packages match a URL and the tool descriptors those packages would expose there.              |
+
+Sample prompts:
+
+- "Search WebMCP Today for Reddit packages, then show me the full details of the best match."
+- "Find packages for Reddit and Google, then compare the best match for each."
+- "Verify which registry-provided tools are available for https://news.ycombinator.com/news."
+
+### Eligibility and self-sufficiency
+
+The annotated `pre-webmcp-challenge` tag marks commit `60e3660`, the baseline
+before challenge-specific work. [NEW-WORK.md](NEW-WORK.md) is the dated changelog
+for work after that tag.
+
+The judge path is self-sufficient within this repository: the Next.js web app
+uses its own public API, database, schema package, and curated seed package. It
+does not load code or package data from `webmcp-packages` or another repository
+at runtime.
+
+Licensing remains split as documented in [License](#license): the server and
+database are **AGPL-3.0-only** under the root `LICENSE`; the reusable schema,
+engine, MCP bridge, curated packages, skill, and extension carry their own
+**MIT** licenses.
+
 ## Agent Skill
 
 Install the public skill for researching, creating, validating, and safely testing a
