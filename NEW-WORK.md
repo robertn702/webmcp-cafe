@@ -10,8 +10,9 @@ new work for judging.
 - Added four site-native, read-only WebMCP tools directly to `webmcp.today`:
   `search_packages`, `get_package`, `compare_packages`, and
   `verify_site_tools`.
-- Registered the tools from the web app itself with abort-scoped
-  `document.modelContext.registerTool` calls, with the legacy navigator location
+- Registered the tools before React hydration from Next.js client
+  instrumentation using the documented one-argument
+  `document.modelContext.registerTool` call, with the legacy navigator location
   as a fallback. No browser extension is required for these four tools.
 - Added bounded full-registry text search over servable package metadata and
   tool descriptors before pagination.

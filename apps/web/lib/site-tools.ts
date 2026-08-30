@@ -6,19 +6,16 @@ import {
 } from "@webmcp-today/schema";
 import { z } from "zod";
 
-type McpTextContent = { type: "text"; text: string };
-export type McpResult = { content: McpTextContent[]; isError?: boolean };
-
 export type SiteTool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
   annotations: { readOnlyHint: true; untrustedContentHint: true };
-  execute: (input: Record<string, unknown>) => Promise<McpResult>;
+  execute: (input: Record<string, unknown>) => Promise<unknown>;
 };
 
 export type ModelContextLike = {
-  registerTool(tool: SiteTool, options: { signal: AbortSignal }): Promise<unknown>;
+  registerTool(tool: SiteTool): Promise<unknown>;
 };
 
 const searchInputSchema = z
@@ -58,13 +55,9 @@ const verifyInputSchema = z
   })
   .strict();
 
-function jsonResult(value: unknown): McpResult {
-  return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
-}
-
-function errorResult(error: unknown): McpResult {
+function errorResult(error: unknown): { error: string } {
   const message = error instanceof Error ? error.message : "Unexpected registry error";
-  return { ...jsonResult({ error: message }), isError: true };
+  return { error: message };
 }
 
 async function fetchJson(path: string): Promise<unknown> {
@@ -94,8 +87,8 @@ function normalizePageUrl(value: string): string {
 
 function execute<Input>(
   schema: z.ZodType<Input>,
-  callback: (input: Input) => Promise<McpResult>,
-): (input: Record<string, unknown>) => Promise<McpResult> {
+  callback: (input: Input) => Promise<unknown>,
+): (input: Record<string, unknown>) => Promise<unknown> {
   return async (input) => {
     const parsed = schema.safeParse(input);
     if (!parsed.success) return errorResult(parsed.error);
@@ -107,6 +100,8 @@ function execute<Input>(
   };
 }
 
+// Package metadata is contributor-controlled, so keep Chrome's explicit
+// untrusted-content signal in addition to the read-only side-effect hint.
 const readOnlyAnnotations = { readOnlyHint: true, untrustedContentHint: true } as const;
 
 export function createSiteTools(): SiteTool[] {
@@ -133,10 +128,10 @@ export function createSiteTools(): SiteTool[] {
           await fetchJson(`/api/packages?${params}`),
         );
         if (!parsed.success) return errorResult(parsed.error);
-        return jsonResult({
+        return {
           total: parsed.data.total,
           packages: parsed.data.packages.map(packageSummary),
-        });
+        };
       }),
     },
     {
@@ -156,7 +151,7 @@ export function createSiteTools(): SiteTool[] {
           await fetchJson(`/api/packages/${encodeURIComponent(id)}`),
         );
         if (!parsed.success) return errorResult(parsed.error);
-        return jsonResult(parsed.data);
+        return parsed.data;
       }),
     },
     {
@@ -192,7 +187,7 @@ export function createSiteTools(): SiteTool[] {
         const commonToolNames = [...firstTools].filter((name) =>
           toolSets.every((tools) => tools.has(name)),
         );
-        return jsonResult({
+        return {
           packages: packages.map(packageSummary),
           commonToolNames,
           uniqueToolNames: packages.map((pkg, index) => ({
@@ -203,7 +198,7 @@ export function createSiteTools(): SiteTool[] {
                 toolSets.every((tools, otherIndex) => otherIndex === index || !tools.has(name)),
               ),
           })),
-        });
+        };
       }),
     },
     {
@@ -226,13 +221,13 @@ export function createSiteTools(): SiteTool[] {
           await fetchJson(`/api/packages/lookup?${params}`),
         );
         if (!parsed.success) return errorResult(parsed.error);
-        return jsonResult({
+        return {
           url: normalizedUrl,
           packages: parsed.data.packages.map((pkg) => ({
             ...packageSummary(pkg),
             tools: pkg.tools,
           })),
-        });
+        };
       }),
     },
   ];
@@ -260,19 +255,17 @@ export function getSiteModelContext(): ModelContextLike | undefined {
 
 export function registerSiteTools(modelContext = getSiteModelContext()): {
   ready: Promise<void>;
-  dispose: () => void;
 } {
-  if (!modelContext) return { ready: Promise.resolve(), dispose: () => undefined };
-  const controller = new AbortController();
+  if (!modelContext) return { ready: Promise.resolve() };
   const ready = Promise.all(
     createSiteTools().map(async (tool) => {
       try {
-        await modelContext.registerTool(tool, { signal: controller.signal });
+        await modelContext.registerTool(tool);
       } catch (error) {
         // A duplicate or unsupported individual tool must not block the rest.
         console.warn(`[webmcp-today] Failed to register site tool "${tool.name}":`, error);
       }
     }),
   ).then(() => undefined);
-  return { ready, dispose: () => controller.abort() };
+  return { ready };
 }
