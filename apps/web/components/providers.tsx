@@ -8,7 +8,6 @@ import { authClient } from "@/lib/auth-client";
 import { apiKeyPlugin } from "@/lib/auth/api-key-plugin";
 import { getQueryClient } from "@/lib/query-client";
 import { AuthProvider } from "./auth/auth-provider";
-import { SiteTools } from "./site-tools";
 import { Toaster } from "./ui/sonner";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -30,7 +29,6 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         {children}
 
-        <SiteTools />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>

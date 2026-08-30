@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createSiteTools,
@@ -39,15 +40,18 @@ function tool(name: string): SiteTool {
   return found;
 }
 
-function resultJson(result: Awaited<ReturnType<SiteTool["execute"]>>): unknown {
-  return JSON.parse(result.content[0]?.text ?? "");
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("site-native WebMCP tools", () => {
+  it("registers from the pre-hydration client entrypoint before Sentry", async () => {
+    const source = await readFile(new URL("../instrumentation-client.ts", import.meta.url), "utf8");
+
+    expect(source.indexOf("registerSiteTools();")).toBeGreaterThan(-1);
+    expect(source.indexOf("registerSiteTools();")).toBeLessThan(source.indexOf("Sentry.init("));
+  });
+
   it("defines four read-only descriptors with bounded schemas", () => {
     const tools = createSiteTools();
     expect(tools.map((item) => item.name)).toEqual([
@@ -87,7 +91,7 @@ describe("site-native WebMCP tools", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/packages?q=read&page=1&pageSize=3&domain=reddit.com",
     );
-    expect(resultJson(result)).toEqual({
+    expect(result).toEqual({
       total: 1,
       packages: [
         {
@@ -113,7 +117,7 @@ describe("site-native WebMCP tools", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const getResult = await tool("get_package").execute({ id: "alpha" });
-    expect(resultJson(getResult)).toEqual(
+    expect(getResult).toEqual(
       expect.objectContaining({
         id: "alpha",
         tools: expect.arrayContaining([expect.objectContaining({ name: "shared" })]),
@@ -121,7 +125,7 @@ describe("site-native WebMCP tools", () => {
     );
 
     const comparison = await tool("compare_packages").execute({ ids: ["alpha", "beta"] });
-    expect(resultJson(comparison)).toEqual({
+    expect(comparison).toEqual({
       packages: [
         expect.objectContaining({ id: "alpha", toolNames: ["shared", "alpha_only"] }),
         expect.objectContaining({ id: "beta", toolNames: ["shared", "beta_only"] }),
@@ -139,7 +143,7 @@ describe("site-native WebMCP tools", () => {
     expect(fetchMock).toHaveBeenLastCalledWith(
       "/api/packages/lookup?url=https%3A%2F%2Freddit.com%2Fpage",
     );
-    expect(resultJson(verified)).toEqual(
+    expect(verified).toEqual(
       expect.objectContaining({
         url: "https://reddit.com/page",
         packages: expect.arrayContaining([
@@ -154,31 +158,30 @@ describe("site-native WebMCP tools", () => {
     );
   });
 
-  it("returns MCP errors for invalid inputs and HTTP failures", async () => {
+  it("returns plain JSON errors for invalid inputs and HTTP failures", async () => {
     const invalid = await tool("search_packages").execute({ query: "" });
-    expect(invalid.isError).toBe(true);
+    expect(invalid).toEqual({ error: expect.any(String) });
 
     vi.stubGlobal(
       "fetch",
       vi.fn(() => Promise.resolve(new Response(null, { status: 500 }))),
     );
     const failed = await tool("get_package").execute({ id: "missing" });
-    expect(failed.isError).toBe(true);
-    expect(resultJson(failed)).toEqual({ error: "Registry request failed (500)" });
+    expect(failed).toEqual({ error: "Registry request failed (500)" });
 
     const badUrl = await tool("verify_site_tools").execute({ url: "ftp://reddit.com" });
-    expect(badUrl.isError).toBe(true);
+    expect(badUrl).toEqual({ error: expect.any(String) });
 
     const malformedUrl = await tool("verify_site_tools").execute({ url: "not-a-url" });
-    expect(malformedUrl.isError).toBe(true);
+    expect(malformedUrl).toEqual({ error: expect.any(String) });
 
     const credentialedUrl = await tool("verify_site_tools").execute({
       url: "https://user:password@reddit.com/page",
     });
-    expect(credentialedUrl.isError).toBe(true);
+    expect(credentialedUrl).toEqual({ error: expect.any(String) });
   });
 
-  it("prefers document, no-ops without WebMCP, continues after rejection, and aborts cleanup", async () => {
+  it("prefers document, no-ops without WebMCP, and continues after rejection", async () => {
     const documentCalls: SiteTool[] = [];
     const navigatorCalls: SiteTool[] = [];
     const documentContext: ModelContextLike = {
@@ -197,31 +200,30 @@ describe("site-native WebMCP tools", () => {
     vi.stubGlobal("navigator", { modelContext: navigatorContext });
     expect(getSiteModelContext()).toBe(documentContext);
 
-    const calls: { signal: AbortSignal }[] = [];
+    const calls: SiteTool[] = [];
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const registerTool = vi.fn((item: SiteTool) => {
+      calls.push(item);
+      return item.name === "get_package"
+        ? Promise.reject(new Error("duplicate"))
+        : Promise.resolve(undefined);
+    });
     const rejectingContext: ModelContextLike = {
-      registerTool(item, options) {
-        calls.push({ signal: options.signal });
-        return item.name === "get_package"
-          ? Promise.reject(new Error("duplicate"))
-          : Promise.resolve(undefined);
-      },
+      registerTool,
     };
     const registration = registerSiteTools(rejectingContext);
     await registration.ready;
     expect(calls).toHaveLength(4);
+    expect(registerTool.mock.calls.every((args) => args.length === 1)).toBe(true);
     expect(warn).toHaveBeenCalledWith(
       '[webmcp-today] Failed to register site tool "get_package":',
       expect.any(Error),
     );
-    registration.dispose();
-    expect(calls.every(({ signal }) => signal.aborted)).toBe(true);
 
     vi.stubGlobal("document", {});
     vi.stubGlobal("navigator", {});
     const unsupported = registerSiteTools();
     await expect(unsupported.ready).resolves.toBeUndefined();
-    unsupported.dispose();
     expect(documentCalls).toEqual([]);
     expect(navigatorCalls).toEqual([]);
   });
