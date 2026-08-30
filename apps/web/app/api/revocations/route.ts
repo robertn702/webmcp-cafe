@@ -1,6 +1,7 @@
 import type { RevocationEntry } from "@webmcp-today/schema";
 import { NextResponse } from "next/server";
 import { getLatestRevocationId, listRevocationsSince } from "@/lib/revocations-repo";
+import { scheduleAggregateMetricIncrement } from "@/lib/aggregate-counters";
 
 /**
  * GET /api/revocations?since=<cursor> — the kill list after that cursor, oldest
@@ -34,9 +35,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     revokedAt: row.revokedAt.toISOString(),
   }));
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     cursor: entries[entries.length - 1]?.id ?? cursor,
     latest: Number(latest),
     entries,
   });
+  scheduleAggregateMetricIncrement("revocation_list_fetch");
+  return response;
 }

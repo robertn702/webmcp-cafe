@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/http";
 import { getPackageAtVersion } from "@/lib/packages-repo";
+import { scheduleAggregateMetricIncrement } from "@/lib/aggregate-counters";
 
 /**
  * GET /api/packages/:id/versions/:versionId — the document served at that exact
@@ -17,5 +18,7 @@ export async function GET(
   const { id, versionId } = await context.params;
   const pkg = await getPackageAtVersion(id, versionId);
   if (!pkg) return jsonError(404, "Package version not found");
-  return NextResponse.json(pkg);
+  const response = NextResponse.json(pkg);
+  scheduleAggregateMetricIncrement("package_definition_get");
+  return response;
 }

@@ -61,6 +61,12 @@ erDiagram
         timestamptz revoked_at
         text revoked_by FK "-> auth.users.id"
     }
+
+    aggregate_counters {
+        date utc_date PK
+        text metric PK
+        int count
+    }
 ```
 
 ## Auth tables (better-auth-owned — treat the shapes as fixed)
@@ -173,3 +179,6 @@ erDiagram
   for the local-install model (`docs/local-first-installs.md` §5): once package bodies
   live on the client's disk, this feed is the only lever the registry keeps after
   install.
+- **`aggregate_counters` contains anonymous operational totals only.** Its composite key is
+  `(utc_date, metric)` and its only other column is `count`; it has no relationship to a user,
+  package, request, or extension installation.

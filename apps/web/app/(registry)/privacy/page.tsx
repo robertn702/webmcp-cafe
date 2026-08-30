@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "What the WebMCP Today extension and website store, what they send, and what they never see.",
 };
 
-const LAST_UPDATED = "8 August 2026";
+const LAST_UPDATED = "19 August 2026";
 
 export default function PrivacyPage() {
   return (
@@ -95,6 +95,12 @@ export default function PrivacyPage() {
           cookie-free and uses anonymized data. It applies to the website&apos;s deployed hosts,
           including Vercel Preview deployments. The extension does not use it or send analytics,
           telemetry, error reports, browsing history, page contents, or queries and fragments.
+        </p>
+        <p>
+          Separately, the server increments anonymous daily aggregate counters for successful
+          package-definition, revocation-list, known-domains, and release-document GET requests.
+          Each counter stores only the UTC date, request category, and count. This is server-side
+          operational counting, not extension analytics or telemetry.
         </p>
         <p>The service uses these processors:</p>
         <ul className="flex list-disc flex-col gap-2 pl-4">

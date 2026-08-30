@@ -19,6 +19,8 @@ const state = vi.hoisted(
   } => ({ rows: [], cursors: [] }),
 );
 
+const counter = vi.hoisted(() => ({ increment: vi.fn() }));
+
 vi.mock("@/lib/revocations-repo", () => ({
   listRevocationsSince: (cursor: number) => {
     state.cursors.push(cursor);
@@ -30,6 +32,10 @@ vi.mock("@/lib/revocations-repo", () => ({
     // toEqual/wire-schema assertions below fail if it ever stops.
     return Promise.resolve(String(max));
   },
+}));
+
+vi.mock("@/lib/aggregate-counters", () => ({
+  scheduleAggregateMetricIncrement: counter.increment,
 }));
 
 function revoked(id: number, versionId: string | null): (typeof state.rows)[number] {
@@ -50,12 +56,14 @@ describe("GET /api/revocations", () => {
   beforeEach(() => {
     state.rows = [revoked(1, null), revoked(2, "ver-2"), revoked(3, null)];
     state.cursors = [];
+    counter.increment.mockClear();
   });
 
   it("starts from 0 when since is absent", async () => {
     const response = await get("");
     expect(response.status).toBe(200);
     expect(state.cursors).toEqual([0]);
+    expect(counter.increment).toHaveBeenCalledWith("revocation_list_fetch");
     const body = await response.json();
     expect(body.entries.map((e: { id: number }) => e.id)).toEqual([1, 2, 3]);
   });

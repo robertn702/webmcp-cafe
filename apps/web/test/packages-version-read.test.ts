@@ -14,6 +14,8 @@ const state = vi.hoisted(
   } => ({ packages: {}, versions: [] }),
 );
 
+const counter = vi.hoisted(() => ({ increment: vi.fn() }));
+
 vi.mock("@/lib/db", () => ({ db: {} }));
 
 vi.mock("@/lib/api-auth", () => ({ getAuthUserId: () => Promise.resolve(null) }));
@@ -27,6 +29,10 @@ vi.mock("@/lib/packages-repo", () => ({
   getPackageAtVersion: (id: string, versionId: string) =>
     Promise.resolve(state.packages[id + "/" + versionId] ?? null),
   listVersions: () => Promise.resolve(state.versions),
+}));
+
+vi.mock("@/lib/aggregate-counters", () => ({
+  scheduleAggregateMetricIncrement: counter.increment,
 }));
 
 const packageAtV1 = {
@@ -58,18 +64,21 @@ function readVersionList(id: string): Promise<Response> {
 describe("GET /api/packages/:id/versions/:versionId", () => {
   beforeEach(() => {
     state.packages = { "pkg-1/ver-1": packageAtV1 };
+    counter.increment.mockClear();
   });
 
   it("serves the package document at that exact version", async () => {
     const response = await readVersion("pkg-1", "ver-1");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(packageAtV1);
+    expect(counter.increment).toHaveBeenCalledWith("package_definition_get");
   });
 
   it("404s on a version that does not belong to this package", async () => {
     const response = await readVersion("pkg-1", "ver-9");
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: "Package version not found" });
+    expect(counter.increment).not.toHaveBeenCalled();
   });
 
   it("404s on an unknown package", async () => {

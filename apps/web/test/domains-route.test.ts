@@ -10,9 +10,15 @@ const state = vi.hoisted((): { domains: string[]; version: number } => ({
   version: 0,
 }));
 
+const counter = vi.hoisted(() => ({ increment: vi.fn() }));
+
 vi.mock("@/lib/domains-repo", () => ({
   listDistinctDomains: () => Promise.resolve(state.domains),
   getDomainsVersion: () => Promise.resolve(state.version),
+}));
+
+vi.mock("@/lib/aggregate-counters", () => ({
+  scheduleAggregateMetricIncrement: counter.increment,
 }));
 
 function get(headers?: HeadersInit): Promise<Response> {
@@ -23,6 +29,7 @@ describe("GET /api/domains", () => {
   beforeEach(() => {
     state.domains = [];
     state.version = 0;
+    counter.increment.mockClear();
   });
 
   it("returns an empty domain list and version 0 for an empty registry", async () => {
@@ -69,6 +76,7 @@ describe("GET /api/domains", () => {
     const response = await get({ "if-none-match": 'W/"1700000000000-2"' });
     expect(response.status).toBe(304);
     expect(await response.text()).toBe("");
+    expect(counter.increment).toHaveBeenCalledWith("known_domains_fetch");
   });
 
   it("returns 200 when If-None-Match is stale", async () => {
@@ -77,5 +85,6 @@ describe("GET /api/domains", () => {
 
     const response = await get({ "if-none-match": 'W/"1600000000000-2"' });
     expect(response.status).toBe(200);
+    expect(counter.increment).toHaveBeenCalledWith("known_domains_fetch");
   });
 });

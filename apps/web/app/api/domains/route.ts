@@ -1,6 +1,7 @@
 import type { DomainsResponse } from "@webmcp-today/schema";
 import { NextResponse } from "next/server";
 import { getDomainsVersion, listDistinctDomains } from "@/lib/domains-repo";
+import { scheduleAggregateMetricIncrement } from "@/lib/aggregate-counters";
 
 const CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400";
 
@@ -16,6 +17,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const etag = `W/"${version}-${domains.length}"`;
 
   if (request.headers.get("if-none-match") === etag) {
+    scheduleAggregateMetricIncrement("known_domains_fetch");
     return new NextResponse(null, {
       status: 304,
       headers: { ETag: etag, "Cache-Control": CACHE_CONTROL },
@@ -23,5 +25,6 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const body: DomainsResponse = { version, generatedAt: new Date().toISOString(), domains };
+  scheduleAggregateMetricIncrement("known_domains_fetch");
   return NextResponse.json(body, { headers: { ETag: etag, "Cache-Control": CACHE_CONTROL } });
 }
