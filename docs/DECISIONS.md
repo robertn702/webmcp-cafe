@@ -23,17 +23,14 @@ lives in code or another doc, and **code + `AGENTS.md` win on disagreement**.
   and OS-level AppleScript focus — outside the extension trust model and
   permission-fragile.
 
-- 2026-07-28 — **DOM execution mode was removed entirely; `api` is the only execution
-  mode.** The pre-launch curated set was 5/6 DOM packages, but they were read-only
-  page-extraction demos nobody needed, while the Reddit API package was the actual
-  product thesis ("act as me on a site I live in"). Keeping DOM meant maintaining two
-  executors, two validation paths, and two doc stories for a fallback whose expected
-  failure (selector rot) is silent — the exact opposite of the API model's loud 4xx.
-  Rejected: keeping read-only DOM extraction — it survives breakage better, but the
-  format/docs surface was the cost being cut, and unauthenticated content APIs (or the
-  site's own WebMCP, eventually) cover that need. If a site with no usable API ever
-  matters, the `mode` literal in `packages/schema/src/execution.ts` turns back into a
-  discriminated union; the deleted executor is in git history.
+- 2026-07-28 — **DOM mode is a narrow read-only observation capability, not browser
+  automation.** Some sites have no usable API for non-sensitive structure, so level 2
+  admits exact semantic role/name observations only. It rejects selectors, values, raw
+  HTML, frames, shadow roots, and mutations; bounded traversal/name work and ambiguous
+  matches fail closed. Rejected: restoring click/type/form choreography or generic DOM
+  extraction — both reintroduce silent selector rot and sensitive-data exposure. API
+  execution remains the preferred general mode; DOM-only packages retain an inert API
+  block to avoid persistence migration scope.
 
 - 2026-07-23 — **Registry lookups are fetched in the extension's background worker, not
   the content script.** A background fetch goes to the registry's own origin and is not

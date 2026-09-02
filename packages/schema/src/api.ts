@@ -320,9 +320,9 @@ export const apiEndpointSchema = z
 export const apiBlockSchema = z.strictObject({
   baseUrl: httpsUrlSchema,
   auth: z.record(z.string(), apiAuthSourceSchema).optional(),
-  endpoints: z
-    .record(z.string(), apiEndpointSchema)
-    .refine((endpoints) => Object.keys(endpoints).length > 0, "api.endpoints must not be empty"),
+  // DOM-only packages retain the required api block for now. Package-level
+  // cross-validation still rejects every API tool whose endpoint is absent.
+  endpoints: z.record(z.string(), apiEndpointSchema),
   // Opaque named static GraphQL documents, referenced as "@documents/name".
   // NEVER template-scanned.
   documents: z.record(z.string(), z.string().min(1).max(DOCUMENT_MAX)).optional(),

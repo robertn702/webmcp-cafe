@@ -147,17 +147,20 @@ _What happens when the in-page LLM invokes a registered tool._
 ```mermaid
 flowchart TB
     CB["registerTool execute callback"] --> API["api-executor (packages/engine)<br/>(validate input first, same-origin fetch,<br/>auth tokens, JMESPath projection,<br/>destructiveHint confirm)"]
+    CB --> DOM["dom-executor (packages/engine)<br/>(bounded top-level semantic reads)"]
     API --> RESULT["mcp-result (packages/engine)<br/>(text → WebMCP result shape)"]
+    DOM --> RESULT
 ```
 
 `api-executor` (in `packages/engine/src/api-executor.ts`, MIT — extracted from
-`src/lib/` for license separation, `docs/DECISIONS.md` 2026-07-30) is the only
-executor — DOM mode was cut pre-launch
-(`docs/DECISIONS.md` 2026-07-28). It re-validates input against `inputSchema` and a
+`src/lib/` for license separation, `docs/DECISIONS.md` 2026-07-30) re-validates input against `inputSchema` and a
 64 KiB serialized-input cap **before** the `destructiveHint` confirm prompt or any
 network access, then binds `{{param}}` templates from that validated input, acquires
 tokens from the package's `api.auth` sources, performs the same-origin fetch, checks
-`errorPath`, and applies the `returns` projection.
+`errorPath`, and applies the `returns` projection. `dom-executor` is the separate level-2
+path: it receives the live document, registration URL, and pass abort signal; it returns
+only bounded top-level semantic observations and fails closed after navigation, in frames,
+or on ambiguity.
 
 ### ④ Local bridge flow — MCP → selected tab's live tools
 

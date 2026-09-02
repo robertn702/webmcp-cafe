@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { applyDomainCrossValidation, createPackageObjectSchema } from "./package.js";
+import {
+  applyDomEngineValidation,
+  applyDomainCrossValidation,
+  createPackageObjectSchema,
+} from "./package.js";
 
 // Shapes served by the registry API (superset of the submission format).
 
@@ -39,9 +43,10 @@ const webMcpPackageObjectSchema = createPackageObjectSchema.extend({
  * checks existed fails closed instead of being served as-is — see
  * `apps/web/lib/packages-repo.ts`'s `hydrate`.
  */
-export const webMcpPackageSchema = webMcpPackageObjectSchema
-  .loose()
-  .superRefine((pkg, ctx) => applyDomainCrossValidation(pkg, ctx));
+export const webMcpPackageSchema = webMcpPackageObjectSchema.loose().superRefine((pkg, ctx) => {
+  applyDomainCrossValidation(pkg, ctx);
+  applyDomEngineValidation(pkg, ctx);
+});
 
 export const packageListResponseSchema = z.object({
   packages: z.array(webMcpPackageSchema),

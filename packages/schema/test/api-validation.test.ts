@@ -565,13 +565,13 @@ describe("apiAuthSourceSchema pattern validation", () => {
   });
 });
 
-describe("apiBlockSchema endpoints requirement", () => {
-  it("rejects an empty endpoints object", () => {
+describe("apiBlockSchema endpoints", () => {
+  it("allows an empty endpoints object for DOM-only packages", () => {
     const result = apiBlockSchema.safeParse({
       baseUrl: "https://acme.com",
       endpoints: {},
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("accepts a single endpoint", () => {

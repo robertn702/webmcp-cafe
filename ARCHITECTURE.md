@@ -170,16 +170,18 @@ sequenceDiagram
     EX-->>A: tool output (uncapped in v1)
 ```
 
-One execution mode, selected per tool by binding to an `api.endpoints` entry:
+Two execution modes are selected per tool:
 
 - **API mode (tier 1)** — the package declares the site's own HTTP API as data
   (`api.endpoints`, `auth` token sources, `returns` projections); the executor derives
   and performs the call. Ships zero code. The load-bearing invariant: **`api.baseUrl`
   must use the package domain or a subdomain, and every derived request is pinned to
   that exact origin after interpolation**. `urlPatterns` select pages for tool
-  registration; they do not constrain `api.baseUrl` or need to cover it. (DOM execution was cut pre-launch — `docs/DECISIONS.md`
-  2026-07-28.) Tiers 2–3 (scoped script slots, full `evaluate`) are designed
+  registration; they do not constrain `api.baseUrl` or need to cover it. Tiers 2–3 (scoped script slots, full `evaluate`) are designed
   but not shipped — see `docs/api-execution-model.md`.
+- **DOM mode (level 2)** — reads only a bounded, top-level light-DOM set of exact
+  semantic role/name observations. It cannot mutate, inspect values/HTML/URLs, or
+  traverse frames or shadow roots. DOM-only packages retain an inert same-site API block.
 - **Validate before any side effect.** The executor re-validates input against the
   tool's `inputSchema` (primitive-only profile) and a 64 KiB serialized-input cap
   before the `destructiveHint` confirm prompt or any network access — an invalid call

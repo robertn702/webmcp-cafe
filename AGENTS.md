@@ -90,14 +90,15 @@ Next route handlers + zod (no tRPC), Neon Postgres + Drizzle, better-auth (GitHu
 - `version`: author-declared positive integer (not semver) — `1` on create, exactly
   `max(version)+1` on publish, or the API 409s with `expectedVersion`
   (docs/DECISIONS.md 2026-07-29).
-- Tool `execution` is `api`-mode only: the tool binds to an entry in the
-  package-level `api.endpoints` block by name. (DOM execution was cut
-  before the initial release — `docs/DECISIONS.md` 2026-07-28.)
+- Tool `execution` is discriminated: API tools bind to `api.endpoints`; DOM tools
+  declare bounded, read-only semantic observations and require `minEngine: 2`.
+  `api` remains required; DOM-only packages carry an inert same-site
+  `api.endpoints: {}` block. Publish schema first, then the engine minor release,
+  before publishing packages that require DOM mode.
 - `minEngine`: positive-integer capability level (not semver), version-scoped.
 - Extension must skip + warn on tool-name collision with site-registered tools.
-- `ENGINE_VERSION` remains `1` for the initial package format. Bump the capability
-  level only for an incompatible format change; compatible format changes do not
-  require a bump (`packages/schema/src/budgets.ts` says why).
+- `ENGINE_VERSION` is `2`, which adds the DOM observation executor. Bump the capability
+  level only for an incompatible format change (`packages/schema/src/budgets.ts` says why).
 - Tier-1 `api` block: `returns` is a JMESPath expression; `errorPath` and auth-source
   `extract` are locator arrays (`["json","errors"]`); an auth source declares exactly
   one of `extract` (JSON locator) or `pattern` (regex over the raw response text,
@@ -168,7 +169,7 @@ a correction, and prune entries whose reasoning has since migrated into code or 
 | Extension notes                 | `apps/extension/AGENTS.md`                                                                                                      |
 | Extension internal map          | `apps/extension/ARCHITECTURE.md`                                                                                                |
 | Data model ERD                  | `docs/erd.md`                                                                                                                   |
-| Execution model (API-only)      | `docs/api-execution-model.md`                                                                                                   |
+| Execution model                 | `docs/api-execution-model.md`                                                                                                   |
 | Platform risk register          | `docs/platform-risks.md`                                                                                                        |
 | Why non-obvious calls were made | `docs/DECISIONS.md`                                                                                                             |
 | Open follow-ups (prune as done) | `docs/BACKLOG.md`                                                                                                               |

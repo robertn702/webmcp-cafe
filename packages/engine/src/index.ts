@@ -5,5 +5,7 @@
 
 export { buildRequest, executeApiTool, handleResponse } from "./api-executor.js";
 export type { ApiToolDescriptor, DerivedRequest, FetchOutcome } from "./api-executor.js";
+export { executeDomTool } from "./dom-executor.js";
+export type { DomExecutionContext, DomToolDescriptor } from "./dom-executor.js";
 export { requiredEngineLevel, supportsPackageEngine } from "./engine-gate.js";
 export type { McpResult, McpTextContent } from "./result.js";

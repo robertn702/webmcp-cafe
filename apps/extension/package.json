@@ -18,6 +18,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "linkedom": "0.18.13",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4",
     "wxt": "^0.20.6"

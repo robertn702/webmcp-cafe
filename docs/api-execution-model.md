@@ -28,9 +28,7 @@ Flagship target: a **read + write Reddit package** backed by its JSON API — re
 threads, plus posting comments — controllable from a terminal LLM through WebMCP. That
 requires authenticated writes, which forces the token-acquisition design below.
 
-DOM execution was cut pre-launch (2026-07-28 — `docs/DECISIONS.md`): this API model
-is the only execution mode. The selector-rot argument above won, and dropping the DOM
-fallback shrank the schema, executor, and docs surface to one model.
+API execution remains the general execution model. Engine level 2 also supports a deliberately narrow DOM read mode: exact semantic role/name observations with only `exists`, `disabled`, `checked`, or `required` boolean output. It cannot use selectors, values, HTML, frames, shadow roots, or mutation operations. DOM-only packages currently carry an inert same-site `api` block with `endpoints: {}`; publishing this format requires schema and engine minor releases and `minEngine: 2`.
 
 ## Tiered execution model
 
@@ -420,9 +418,8 @@ data — so it is buildable today and is not blocked on the spike.
   tier-1 calls against live sites; what runs it, and how do auth'd writes get canaried
   safely (a write canary posts real comments)?
 - **`minEngine` bump policy — resolved.** Packages set `minEngine` to the engine level
-  whose format they rely on. `ENGINE_VERSION` remains `1` for the initial format.
-  Bump the capability level only for an incompatible format change; compatible
-  additions and changes do not require a bump (`packages/schema/src/budgets.ts`). The
+  whose format they rely on. `ENGINE_VERSION` is `2`: level 2 adds the DOM observation
+  executor. The
   extension refuses a too-new package _whole_ rather than
   registering tools it cannot run — `supportsPackageEngine`
   (`packages/engine/src/engine-gate.ts`), applied per package in `register-tools.ts`.

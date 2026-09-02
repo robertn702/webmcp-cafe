@@ -55,7 +55,7 @@ export const packageVersions = pgTable(
     version: integer("version").notNull(),
     urlPatterns: jsonb("url_patterns").$type<string[]>().notNull(),
     tools: jsonb("tools").$type<ToolDescriptor[]>().notNull(),
-    /** Tier-1 API execution surface for this version's API-mode tools (see docs/api-execution-model.md). Required — execution is api-mode only. */
+    /** Required API execution surface for API-mode tools; DOM-only versions retain an inert block. */
     api: jsonb("api").$type<ApiBlock>().notNull(),
     /** Capability floor this version's content requires (see engineLevelSchema in packages/schema). Required. */
     minEngine: integer("min_engine").notNull(),

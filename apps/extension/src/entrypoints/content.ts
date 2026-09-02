@@ -61,6 +61,7 @@ export default defineContentScript({
 const deps: RegistrationDeps = {
   loadPackages: getPackagesForUrl,
   getModelContext: getContentModelContext,
+  getDocument: () => document,
   siteDeclaredToolNames,
   reportStatus,
 };

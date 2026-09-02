@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parseHTML } from "linkedom";
 import { webMcpPackageSchema, type WebMcpPackage } from "@webmcp-today/schema";
 import type { PageLoadPackages } from "../src/lib/local-lookup.js";
 import type { ModelContextLike } from "../src/lib/model-context.js";
@@ -35,6 +36,35 @@ function pkg(...toolNames: string[]): WebMcpPackage {
   });
 }
 
+function domPkg(): WebMcpPackage {
+  return webMcpPackageSchema.parse({
+    id: "pkg-dom",
+    versionId: "ver-dom",
+    version: 1,
+    contributor: "robert",
+    createdAt: "2026-09-02T00:00:00.000Z",
+    updatedAt: "2026-09-02T00:00:00.000Z",
+    domain: "en.wikipedia.org",
+    urlPatterns: ["*://en.wikipedia.org/wiki/*"],
+    title: "DOM fixture",
+    description: "Read-only DOM fixture package",
+    minEngine: 2,
+    tools: [
+      {
+        name: "wiki_dom_status",
+        description: "Read page heading status.",
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        annotations: { readOnlyHint: true, untrustedContentHint: true },
+        execution: {
+          mode: "dom",
+          observations: { heading: { role: "heading", name: "Coffee", read: "exists" } },
+        },
+      },
+    ],
+    api: { baseUrl: "https://en.wikipedia.org", endpoints: {} },
+  });
+}
+
 /** Records what was registered; `reject` names make registerTool fail. */
 function recordingContext(reject: string[] = []): {
   mc: ModelContextLike;
@@ -64,6 +94,7 @@ function harness(
   const deps: RegistrationDeps = {
     loadPackages: vi.fn(async () => result),
     getModelContext,
+    getDocument: () => document,
     siteDeclaredToolNames: () => new Set(declared),
     reportStatus: (status) => {
       statuses.push(status);
@@ -104,6 +135,47 @@ describe("runRegistrationPass", () => {
 
     expect(registered).toEqual(["wiki_summary", "wiki_search"]);
     expect(statuses).toEqual([{ kind: "registered", toolNames: ["wiki_summary", "wiki_search"] }]);
+  });
+
+  it("dispatches DOM tools against the live document and fails stale or aborted calls", async () => {
+    const { document: liveDocument, window } = parseHTML(
+      "<!doctype html><html><body><h1>Coffee</h1></body></html>",
+    );
+    Object.defineProperty(window, "location", { configurable: true, value: { href: PAGE_URL } });
+    Object.defineProperty(window, "top", { configurable: true, value: window });
+    Object.defineProperty(window, "parent", { configurable: true, value: window });
+    vi.stubGlobal("document", liveDocument);
+    vi.stubGlobal("Element", window.Element);
+    vi.stubGlobal("HTMLInputElement", window.HTMLInputElement);
+    vi.stubGlobal("HTMLTextAreaElement", window.HTMLTextAreaElement);
+    let execute: ((params: Record<string, unknown>) => Promise<unknown>) | undefined;
+    const mc: ModelContextLike = {
+      registerTool: async (descriptor) => {
+        execute = descriptor.execute;
+      },
+    };
+    const { deps, statuses } = harness([domPkg()], mc);
+    deps.getDocument = () => liveDocument;
+    const controller = new AbortController();
+
+    await runRegistrationPass(PAGE_URL, controller.signal, deps);
+
+    expect(statuses).toEqual([{ kind: "registered", toolNames: ["wiki_dom_status"] }]);
+    if (execute === undefined) throw new Error("DOM fixture was not registered");
+    await expect(execute({})).resolves.toEqual({
+      content: [{ type: "text", text: '{"heading":{"matched":true}}' }],
+    });
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "https://en.wikipedia.org/wiki/Tea" },
+    });
+    await expect(execute({})).resolves.toEqual({
+      content: [{ type: "text", text: "DOM tool execution failed." }],
+    });
+    controller.abort();
+    await expect(execute({})).resolves.toEqual({
+      content: [{ type: "text", text: "DOM tool execution failed." }],
+    });
   });
 
   it("registers tools through the in-memory fallback", async () => {
@@ -148,6 +220,7 @@ describe("runRegistrationPass", () => {
         return { packages: [pkg("wiki_summary")] };
       },
       getModelContext: () => mc,
+      getDocument: () => document,
       siteDeclaredToolNames: () => new Set(),
       reportStatus: (status) => statuses.push(status),
     };

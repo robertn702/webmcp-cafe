@@ -1,4 +1,9 @@
-import { executeApiTool, requiredEngineLevel, supportsPackageEngine } from "@webmcp-today/engine";
+import {
+  executeApiTool,
+  executeDomTool,
+  requiredEngineLevel,
+  supportsPackageEngine,
+} from "@webmcp-today/engine";
 import { ENGINE_VERSION } from "@webmcp-today/schema";
 import type { PageLoadPackages } from "./local-lookup.js";
 import type { McpResult, ModelContextLike } from "./model-context.js";
@@ -13,6 +18,8 @@ export interface RegistrationDeps {
   /** The WebMCP context to register into — the content script always supplies
    * one (native API or the built-in fallback), so this is never absent. */
   getModelContext: () => ModelContextLike;
+  /** The live page document; DOM tools must never receive a detached snapshot. */
+  getDocument: () => Document;
   /** Tool names the site declared itself (`form[toolname]`) — ours yield to them. */
   siteDeclaredToolNames: () => Set<string>;
   /** Surfaces the pass outcome on the action badge + popup. */
@@ -76,18 +83,25 @@ export async function runRegistrationPass(
       const execution = tool.execution;
       if (!execution) continue;
 
-      // v1 has one execution mode: api. The endpoint must resolve against the
-      // package's api block (install-time zod validation makes this a
-      // should-never-happen guard).
-      const api = pkg.api;
-      const endpoint = api?.endpoints[execution.endpoint];
-      if (!api || !endpoint) {
-        console.warn(
-          `[webmcp-today] Skipping tool "${tool.name}" — api endpoint "${execution.endpoint}" is missing from the package's api block.`,
-        );
-        continue;
+      let execute: ToolExecute;
+      if (execution.mode === "api") {
+        const api = pkg.api;
+        const endpoint = api?.endpoints[execution.endpoint];
+        if (!api || !endpoint) {
+          console.warn(
+            `[webmcp-today] Skipping tool "${tool.name}" — api endpoint "${execution.endpoint}" is missing from the package's api block.`,
+          );
+          continue;
+        }
+        execute = (params) => executeApiTool({ ...tool, execution }, api, params);
+      } else {
+        execute = (params) =>
+          executeDomTool(tool, params, {
+            document: deps.getDocument(),
+            registrationUrl: url,
+            signal,
+          });
       }
-      const execute: ToolExecute = (params) => executeApiTool(tool, api, params);
 
       if (seen.has(tool.name)) continue;
       if (declarativeNames.has(tool.name)) {

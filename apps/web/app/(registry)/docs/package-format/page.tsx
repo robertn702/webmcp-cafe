@@ -65,13 +65,13 @@ export default function PackageFormatPage() {
             The tools registered on a matching page. Names must be unique within the package.
           </Field>
           <Field name="api" type="ApiBlock · required">
-            The site&apos;s HTTP surface, with at least one endpoint. Execution is api-mode only, so
-            every tool binds to an endpoint declared here.
+            The site&apos;s HTTP surface. API tools bind to endpoints declared here. DOM-only
+            packages retain an inert same-site block with <Code>endpoints: &#123;&#125;</Code>.
           </Field>
           <Field name="minEngine" type="integer ≥ 1 · required">
             The capability floor this version needs, like an Android API level. An extension whose
             own level is lower skips the package instead of half-running it. Current level is{" "}
-            <Code>1</Code>.
+            <Code>2</Code>. DOM observations require level 2.
           </Field>
           <Field name="changelog" type="string, ≤2000 · optional">
             What changed in this version. Shown to installed users deciding whether to move their
@@ -112,9 +112,10 @@ export default function PackageFormatPage() {
             <Code>destructiveHint</Code>. No unknown keys, and a tool can&apos;t claim both{" "}
             <Code>readOnlyHint</Code> and <Code>destructiveHint</Code>. Mark writes honestly.
           </Field>
-          <Field name="execution" type='{ mode: "api", endpoint } · required'>
-            Binds the tool to a key in <Code>api.endpoints</Code>. <Code>mode</Code> is{" "}
-            <Code>&quot;api&quot;</Code>, the only mode there is.
+          <Field name="execution" type="API or DOM descriptor · required">
+            API mode binds the tool to a key in <Code>api.endpoints</Code>. DOM mode declares 1–16
+            exact semantic role/name observations and can return only presence or allowed boolean
+            states; it has empty input, read-only/untrusted hints, and <Code>minEngine: 2</Code>.
           </Field>
         </div>
       </Section>
@@ -134,7 +135,7 @@ export default function PackageFormatPage() {
             Hacker News&apos;s Firebase read API.
           </Field>
           <Field name="endpoints" type="Record<string, ApiEndpoint> · required">
-            Named requests. Tools bind to these keys.
+            Named requests. API tools bind to these keys; DOM-only packages use an empty record.
           </Field>
           <Field name="auth" type="Record<string, ApiAuthSource> · optional">
             Named token flows: fetch a page or endpoint, pull a token out of the response, resend it

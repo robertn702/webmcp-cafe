@@ -124,10 +124,25 @@ export function applyDomainCrossValidation(
   }
 }
 
+/** DOM observations require the level-2 executor in every package envelope. */
+export function applyDomEngineValidation(
+  pkg: { tools: z.infer<typeof toolsArraySchema>; minEngine: number },
+  ctx: z.RefinementCtx,
+): void {
+  if (pkg.tools.some((tool) => tool.execution.mode === "dom") && pkg.minEngine < 2) {
+    ctx.addIssue({
+      code: "custom",
+      message: "DOM tools require minEngine 2 or newer",
+      path: ["minEngine"],
+    });
+  }
+}
+
 /** What contributors submit (contributor identity comes from auth, not the body). */
-export const createPackageSchema = createPackageObjectSchema.superRefine(
-  applyDomainCrossValidation,
-);
+export const createPackageSchema = createPackageObjectSchema.superRefine((pkg, ctx) => {
+  applyDomainCrossValidation(pkg, ctx);
+  applyDomEngineValidation(pkg, ctx);
+});
 
 /**
  * Metadata-only edits (packages row) — title and description. `domain` is the
@@ -156,6 +171,7 @@ export const publishVersionSchema = createPackageObjectSchema
     for (const issue of collectApiIssues(pkg)) {
       ctx.addIssue({ code: "custom", message: issue.message, path: issue.path });
     }
+    applyDomEngineValidation(pkg, ctx);
   });
 
 /**
@@ -173,9 +189,10 @@ export function publishVersionSchemaForDomain(domain: string) {
       changelog: true,
       minEngine: true,
     })
-    .superRefine((pkg, ctx) =>
-      applyDomainCrossValidation({ ...pkg, domain }, ctx, ["urlPatterns"]),
-    );
+    .superRefine((pkg, ctx) => {
+      applyDomainCrossValidation({ ...pkg, domain }, ctx, ["urlPatterns"]);
+      applyDomEngineValidation(pkg, ctx);
+    });
 }
 
 export type CreatePackageInput = z.infer<typeof createPackageSchema>;

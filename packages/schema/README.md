@@ -67,10 +67,12 @@ if (!result.success) {
 All public values are exported from the package root.
 
 - **Package schemas and types:** `createPackageSchema`, `createPackageObjectSchema`, `updatePackageMetaSchema`, `publishVersionSchema`, `publishVersionSchemaForDomain`, `CreatePackageInput`, `UpdatePackageMetaInput`, and `PublishVersionInput`.
-- **Tool and input schemas:** `toolDescriptorSchema`, `inputSchemaSchema`, `executionDescriptorSchema`, `apiExecutionSchema`, plus their inferred types. Tool execution currently supports `execution: { mode: "api", endpoint }`.
+- **Tool and input schemas:** `toolDescriptorSchema`, `inputSchemaSchema`, `executionDescriptorSchema`, `apiExecutionSchema`, `domExecutionSchema`, and their inferred types. DOM tools declare 1–16 exact semantic role/name observations and return only presence or allowed boolean states. They require an empty input schema, read-only and untrusted-content hints, and `minEngine: 2`.
 - **API format:** `apiBlockSchema`, `apiEndpointSchema`, `apiAuthSourceSchema`, `apiGraphqlSchema`, `collectApiIssues`, and the `ApiBlock`/`ApiEndpoint` types. Endpoints can declare a method, path, query, one request-body form (`body`, `form`, or `graphql`), optional JMESPath `returns`, error locators, and named auth sources.
 - **Registry and bridge wire schemas:** `webMcpPackageSchema`, response schemas such as `packageLookupResponseSchema`, `bridgeRequestSchema`, and local-bridge request/response schemas.
 - **Utilities and constants:** URL-pattern parsing/matching helpers including `matchUrlPattern` and `rankPackagesByUrl`; `unknownPlaceholders`; `canonicalizeApiBlock` and `apiContentHash`; and limits such as `TOOL_NAME_MAX`, `TOOL_DESCRIPTION_MAX`, and `ENGINE_VERSION`.
+
+The `api` block remains required. A DOM-only package currently carries an inert same-site block with `endpoints: {}`; API tools still require their referenced endpoint. Publishing this public format change requires a schema minor release followed by an engine minor release; publish the schema first so the engine can depend on it.
 
 For exact field constraints and all exports, see the [source](https://github.com/robertn702/webmcp-today/tree/main/packages/schema/src) and the [API-backed package-format documentation](https://github.com/robertn702/webmcp-today/blob/main/docs/api-execution-model.md).
 

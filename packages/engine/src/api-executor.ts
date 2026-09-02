@@ -3,6 +3,7 @@ import {
   validateToolInput,
   type ApiAuthSource,
   type ApiBlock,
+  type ApiExecution,
   type ApiEndpoint,
   type ToolDescriptor,
 } from "@webmcp-today/schema";
@@ -474,10 +475,10 @@ export function handleResponse(endpoint: ApiEndpoint, outcome: FetchOutcome): Mc
  *  destructiveHint confirm gate, and `execution` for the endpoint binding.
  *  The engine never touches `description` (that's UI/registration-only), so
  *  callers (and tests) don't have to fabricate one just to execute a tool. */
-export type ApiToolDescriptor = Pick<
-  ToolDescriptor,
-  "name" | "inputSchema" | "annotations" | "execution"
->;
+export type ApiToolDescriptor = Omit<
+  Pick<ToolDescriptor, "name" | "inputSchema" | "annotations" | "execution">,
+  "execution"
+> & { execution: ApiExecution };
 
 export async function executeApiTool(
   tool: ApiToolDescriptor,

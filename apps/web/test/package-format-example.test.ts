@@ -33,12 +33,12 @@ describe("docs package-format example", () => {
   });
 
   // The page cites these budgets by number (tool name ≤30, tool description
-  // ≤500, engine level 1). If any of them move, /docs/package-format needs a
+  // ≤500, engine level 2). If any of them move, /docs/package-format needs a
   // matching edit — this assertion is what forces that instead of silent rot.
   it("cites the budget constants the page states", () => {
     expect(TOOL_NAME_MAX).toBe(30);
     expect(TOOL_DESCRIPTION_MAX).toBe(500);
-    expect(ENGINE_VERSION).toBe(1);
+    expect(ENGINE_VERSION).toBe(2);
   });
 
   // The page's "The shape" section documents every top-level field by name.

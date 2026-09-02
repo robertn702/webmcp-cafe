@@ -167,15 +167,16 @@ package(s) matched this URL` → bridge `list_webmcp_tools` shows the tools.
 - `src/entrypoints/popup/` + the action badge — per-tab status, the install
   list (with uninstall), and the paused/recovery states. Never inject UI into
   the page.
-- The executor lives in `packages/engine` (`@webmcp-today/engine`, MIT) —
+- The executors live in `packages/engine` (`@webmcp-today/engine`, MIT) —
   extracted from `src/lib/` for license separation (docs/DECISIONS.md 2026-07-30):
-  `api-executor.ts` is the only executor (DOM mode was cut pre-launch,
-  `docs/DECISIONS.md` 2026-07-28): binds `{{param}}` templates, acquires auth
+  `api-executor.ts` binds `{{param}}` templates, acquires auth
   tokens from `api.auth` sources, performs the same-origin fetch, checks
   `errorPath`, applies the `returns` JMESPath projection. `destructiveHint`
   tools gate on a blocking `window.confirm`. The fetch MUST run in the
   content-script (page) context — the SameSite-cookie rationale is the header
-  comment in `packages/engine/src/api-executor.ts`.
+  comment in `packages/engine/src/api-executor.ts`. `dom-executor.ts` is a separate
+  level-2, read-only semantic observer; registration passes it the live document, URL,
+  and abort signal so navigation and frames fail closed.
 - The bundled fallback is gone: the `@webmcp-today/curated-packages` dependency was
   removed in step 5b (U7). The package remains the seed source for the registry
   (`apps/web/scripts/seed.ts`).

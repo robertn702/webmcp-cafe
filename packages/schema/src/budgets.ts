@@ -11,8 +11,6 @@ export const PARAM_DESCRIPTION_MAX = 150;
 /** Current package format engine version — a capability level compared with
  *  plain `>=` against a version's `minEngine` (docs/DECISIONS.md 2026-07-24).
  *
- *  Keep level 1 valid for the initial package format. Bump the capability level
- *  only when a format change is incompatible with an older engine; compatible
- *  additions and changes do not require a bump. The extension refuses packages
- *  whose minEngine exceeds its supported level. */
-export const ENGINE_VERSION = 1;
+ *  Level 2 adds read-only DOM observations. The extension refuses packages whose
+ *  minEngine exceeds its supported level. */
+export const ENGINE_VERSION = 2;

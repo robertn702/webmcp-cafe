@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RevocationEntry } from "@webmcp-today/schema";
+import { ENGINE_VERSION, type RevocationEntry } from "@webmcp-today/schema";
 import { handleBridgeRequest, type BridgeDeps } from "../src/lib/install-bridge.js";
 import { createInstallsStore, type ReadySchemaState } from "../src/lib/installs-store.js";
 import { INDEX_KEY, REVOKED_KEY, pkgKey, type RevokedDoc } from "../src/lib/store-schema.js";
@@ -154,7 +154,7 @@ describe("handleBridgeRequest", () => {
       expect(response).toEqual({
         ok: true,
         protocol: 1,
-        engine: 1,
+        engine: ENGINE_VERSION,
         extensionVersion: "0.0.1",
         storageReadable: true,
       });
