@@ -1,6 +1,6 @@
 {
   "name": "@webmcp-today/engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Execution engine for WebMCP Today — runs declarative API calls and bounded read-only DOM observations",
   "type": "module",
   "license": "MIT",
@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@jmespath-community/jmespath": "1.3.0",
-    "@webmcp-today/schema": "0.3.0"
+    "@webmcp-today/schema": "0.4.0"
   },
   "devDependencies": {
     "linkedom": "0.18.13",

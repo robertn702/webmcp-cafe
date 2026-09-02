@@ -1,6 +1,7 @@
 import {
   toolDescriptorSchema,
   validateToolInput,
+  type DomExecution,
   type DomObservation,
   type ToolDescriptor,
 } from "@webmcp-today/schema";
@@ -28,7 +29,7 @@ const PRUNED_TAGS = new Set([
 ]);
 const TEXT_EXCLUDED_TAGS = new Set(["INPUT", "TEXTAREA", ...PRUNED_TAGS]);
 
-export type DomToolDescriptor = ToolDescriptor;
+export type DomToolDescriptor = Omit<ToolDescriptor, "execution"> & { execution: DomExecution };
 
 export interface DomExecutionContext {
   document: Document;

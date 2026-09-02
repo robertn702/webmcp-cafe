@@ -21,9 +21,10 @@ export default function PackageFormatPage() {
       <h1 className="mt-3 font-display text-4xl tracking-tight">The package format</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
         A package is one JSON document. It names the site it targets, the tools it registers there,
-        and the site&apos;s own HTTP endpoints those tools call. Nothing in it can run arbitrary
-        code in the page: a tool is a declared request, not a script. This page covers every field.
-        When you&apos;re ready,{" "}
+        and the API metadata they use, which is an inert same-site block for DOM-only packages. Each
+        tool declares either an HTTP request or a bounded read-only DOM observation. Nothing in it
+        can run arbitrary code in the page: tools are declarations, not scripts. This page covers
+        every field. When you&apos;re ready,{" "}
         <Link href="/submit" className="text-foreground underline underline-offset-4">
           paste it into the form
         </Link>

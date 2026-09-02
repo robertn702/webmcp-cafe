@@ -175,8 +175,10 @@ Two execution modes are selected per tool:
 - **API mode (tier 1)** — the package declares the site's own HTTP API as data
   (`api.endpoints`, `auth` token sources, `returns` projections); the executor derives
   and performs the call. Ships zero code. The load-bearing invariant: **`api.baseUrl`
-  must use the package domain or a subdomain, and every derived request is pinned to
-  that exact origin after interpolation**. `urlPatterns` select pages for tool
+  must normally use the package domain or a subdomain, and every derived request is
+  pinned to that exact origin after interpolation**. The sole cross-origin exception is
+  anonymous `GET` reads from `https://hacker-news.firebaseio.com`, with no auth,
+  omitted cookies, and rejected redirects. `urlPatterns` select pages for tool
   registration; they do not constrain `api.baseUrl` or need to cover it. Tiers 2–3 (scoped script slots, full `evaluate`) are designed
   but not shipped — see `docs/api-execution-model.md`.
 - **DOM mode (level 2)** — reads only a bounded, top-level light-DOM set of exact

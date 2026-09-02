@@ -16,10 +16,10 @@ exists anywhere in the repository or environment, and npm records publish
 provenance automatically. The publish job holds only `contents: read` and
 `id-token: write`, and every action is pinned to a full commit SHA.
 
-The first `@webmcp-today/engine` publication is a one-time human-run bootstrap
-using the maintainer's npm credentials and the reviewed commands below. It does
-not use the OIDC workflow, so the publisher must verify the exact checkout and
-tarball contents before approving the command.
+`@webmcp-today/engine` releases are human-run using the maintainer's npm
+credentials and the reviewed commands below. They do not use the OIDC workflow,
+so the publisher must verify the exact checkout and tarball contents before
+approving the command.
 
 ## Checksum scope
 
@@ -78,20 +78,26 @@ environment, and the required reviewer is the last line of defense for a
 legitimate tag run. Review the exact workflow file being executed before
 approving any run.
 
-## First engine publication
+## Engine publication
 
-The proposed first version is `@webmcp-today/engine@0.1.0`. This first bootstrap
-is a human-run npm publication; do not add the engine to the automated OIDC
-workflow until a later, separately reviewed release process requires it.
+Engine releases remain human-run npm publications; do not add the engine to the
+automated OIDC workflow until a later, separately reviewed release process
+requires it.
 
-Before publishing, confirm that `@webmcp-today/schema@0.3.0` is public (the
-engine's exact runtime dependency), the reviewed commit is checked out, and the
-package gate passes:
+For the DOM execution release, publish `@webmcp-today/schema@0.4.0` first, then
+confirm it is public before publishing `@webmcp-today/engine@0.2.0` (which pins
+that exact runtime dependency). The reviewed commit must be checked out and the
+package gate must pass:
 
 ```bash
-bun run check:engine-package
+bun run check:engine-package --published-schema
 (cd packages/engine && npm publish --dry-run --access public)
 ```
+
+CI runs the same gate without `--published-schema`, installing locally packed
+schema and engine tarballs so an unpublished release pair can be reviewed. The
+release-mode flag installs only the engine tarball and requires npm to supply
+the pinned schema version that was published first.
 
 The human publisher must be authenticated to npm with permission to publish the
 `@webmcp-today` scope and must inspect the dry-run tarball before running this
@@ -100,9 +106,6 @@ exact command from `packages/engine`:
 ```bash
 npm publish --access public
 ```
-
-ROB-216 prepares this command only. It does not publish, release, merge, or
-deploy `@webmcp-today/engine`.
 
 ### One-time npm Trusted Publisher configuration
 

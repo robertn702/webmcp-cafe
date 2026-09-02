@@ -170,8 +170,10 @@ package(s) matched this URL` → bridge `list_webmcp_tools` shows the tools.
 - The executors live in `packages/engine` (`@webmcp-today/engine`, MIT) —
   extracted from `src/lib/` for license separation (docs/DECISIONS.md 2026-07-30):
   `api-executor.ts` binds `{{param}}` templates, acquires auth
-  tokens from `api.auth` sources, performs the same-origin fetch, checks
-  `errorPath`, applies the `returns` JMESPath projection. `destructiveHint`
+  tokens from `api.auth` sources, performs the origin-pinned fetch, checks
+  `errorPath`, applies the `returns` JMESPath projection. The sole cross-origin
+  exception is anonymous `GET` reads from `https://hacker-news.firebaseio.com`,
+  with no auth, omitted cookies, and rejected redirects. `destructiveHint`
   tools gate on a blocking `window.confirm`. The fetch MUST run in the
   content-script (page) context — the SameSite-cookie rationale is the header
   comment in `packages/engine/src/api-executor.ts`. `dom-executor.ts` is a separate

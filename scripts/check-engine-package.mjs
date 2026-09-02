@@ -1,12 +1,18 @@
 #!/usr/bin/env bun
-/* global console */
+/* global console, process */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const engineDir = join(repoRoot, "packages/engine");
+const schemaDir = join(repoRoot, "packages/schema");
 const scratchDir = join(repoRoot, ".scratch");
+const usePublishedSchema = process.argv.includes("--published-schema");
+
+if (process.argv.slice(2).some((argument) => argument !== "--published-schema")) {
+  throw new Error("usage: bun scripts/check-engine-package.mjs [--published-schema]");
+}
 
 function fail(message) {
   throw new Error(message);
@@ -21,6 +27,15 @@ function run(command, args, cwd) {
   return result.stdout;
 }
 
+function packPackage(packageDir, packDir) {
+  const output = run("npm", ["pack", "--json", "--pack-destination", packDir], packageDir);
+  const jsonStart = output.lastIndexOf("\n[");
+  const [packed] = JSON.parse(output.slice(jsonStart === -1 ? 0 : jsonStart));
+  if (!packed?.filename || !Array.isArray(packed.files))
+    fail(`npm pack did not report a tarball file list for ${packageDir}`);
+  return packed;
+}
+
 let tempDir;
 
 try {
@@ -29,14 +44,13 @@ try {
   const packDir = join(tempDir, "pack");
   mkdirSync(packDir);
 
-  const packOutput = run("npm", ["pack", "--json", "--pack-destination", packDir], engineDir);
-  const packJsonStart = packOutput.lastIndexOf("\n[");
-  const [packed] = JSON.parse(packOutput.slice(packJsonStart === -1 ? 0 : packJsonStart));
-  if (!packed?.filename || !Array.isArray(packed.files))
-    fail("npm pack did not report a tarball file list");
+  const schemaPackage = JSON.parse(readFileSync(join(schemaDir, "package.json"), "utf8"));
+  if (typeof schemaPackage.version !== "string") fail("schema package has no version");
+  const packedSchema = usePublishedSchema ? null : packPackage(schemaDir, packDir);
+  const packed = packPackage(engineDir, packDir);
 
   const packedFiles = new Set(packed.files.map((file) => file.path));
-  const modules = ["index", "api-executor", "engine-gate", "mcp-result", "result"];
+  const modules = ["index", "api-executor", "dom-executor", "engine-gate", "mcp-result", "result"];
   const requiredFiles = [
     "package.json",
     "LICENSE",
@@ -53,24 +67,37 @@ try {
   const consumerDir = join(tempDir, "consumer");
   mkdirSync(consumerDir);
   writeFileSync(join(consumerDir, "package.json"), '{"private":true,"type":"module"}\n');
-  const tarball = join(packDir, packed.filename);
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball], consumerDir);
+  const engineTarball = join(packDir, packed.filename);
+  const installTargets = [engineTarball];
+  if (packedSchema !== null) installTargets.unshift(join(packDir, packedSchema.filename));
+  run(
+    "npm",
+    ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...installTargets],
+    consumerDir,
+  );
 
   const installedPackage = JSON.parse(
     readFileSync(join(consumerDir, "node_modules/@webmcp-today/engine/package.json"), "utf8"),
   );
-  if (installedPackage.dependencies?.["@webmcp-today/schema"] !== "0.3.0") {
-    fail("packed engine must pin @webmcp-today/schema to 0.3.0");
+  const installedSchema = JSON.parse(
+    readFileSync(join(consumerDir, "node_modules/@webmcp-today/schema/package.json"), "utf8"),
+  );
+  if (installedPackage.dependencies?.["@webmcp-today/schema"] !== schemaPackage.version) {
+    fail(`packed engine must pin @webmcp-today/schema to ${schemaPackage.version}`);
+  }
+  if (installedSchema.version !== schemaPackage.version) {
+    fail(`consumer installed schema ${installedSchema.version}, expected ${schemaPackage.version}`);
   }
 
   const testFile = join(consumerDir, "engine.test.mjs");
   writeFileSync(
     testFile,
     `import { expect, test } from "bun:test";
-import { buildRequest, executeApiTool, handleResponse } from "@webmcp-today/engine";
+import { buildRequest, executeApiTool, executeDomTool, handleResponse } from "@webmcp-today/engine";
 
 test("exposes the engine package API", () => {
   expect(typeof executeApiTool).toBe("function");
+  expect(typeof executeDomTool).toBe("function");
   expect(typeof buildRequest).toBe("function");
   expect(typeof handleResponse).toBe("function");
 });
@@ -85,9 +112,12 @@ test("exposes the engine package API", () => {
     `import {
   buildRequest,
   executeApiTool,
+  executeDomTool,
   handleResponse,
   type ApiToolDescriptor,
   type DerivedRequest,
+  type DomExecutionContext,
+  type DomToolDescriptor,
   type FetchOutcome,
   type McpResult,
   type McpTextContent,
@@ -95,10 +125,24 @@ test("exposes the engine package API", () => {
 
 declare const tool: ApiToolDescriptor;
 declare const request: DerivedRequest;
+declare const domContext: DomExecutionContext;
+declare const domTool: DomToolDescriptor;
 declare const outcome: FetchOutcome;
 declare const result: McpResult;
 declare const content: McpTextContent;
-void [buildRequest, executeApiTool, handleResponse, tool, request, outcome, result, content];
+void [
+  buildRequest,
+  executeApiTool,
+  executeDomTool,
+  handleResponse,
+  tool,
+  request,
+  domContext,
+  domTool,
+  outcome,
+  result,
+  content,
+];
 `,
   );
   writeFileSync(
@@ -126,7 +170,7 @@ void [buildRequest, executeApiTool, handleResponse, tool, request, outcome, resu
   const metafile = join(consumerDir, "meta.json");
   writeFileSync(
     entryPoint,
-    'import { executeApiTool } from "@webmcp-today/engine";\nexport { executeApiTool };\n',
+    'import { executeApiTool, executeDomTool } from "@webmcp-today/engine";\nexport { executeApiTool, executeDomTool };\n',
   );
   run(
     "bun",

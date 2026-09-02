@@ -28,7 +28,7 @@ Flagship target: a **read + write Reddit package** backed by its JSON API — re
 threads, plus posting comments — controllable from a terminal LLM through WebMCP. That
 requires authenticated writes, which forces the token-acquisition design below.
 
-API execution remains the general execution model. Engine level 2 also supports a deliberately narrow DOM read mode: exact semantic role/name observations with only `exists`, `disabled`, `checked`, or `required` boolean output. It cannot use selectors, values, HTML, frames, shadow roots, or mutation operations. DOM-only packages currently carry an inert same-site `api` block with `endpoints: {}`; publishing this format requires schema and engine minor releases and `minEngine: 2`.
+API execution remains the general execution model. Engine level 2 also supports a deliberately narrow DOM read mode: exact semantic role/name observations with `matched` and only `disabled`, `checked`, or `required` boolean output. It cannot use selectors, values, HTML, frames, shadow roots, or mutation operations. DOM-only packages currently carry an inert same-site `api` block with `endpoints: {}`; publishing this format requires schema and engine minor releases and `minEngine: 2`.
 
 ## Tiered execution model
 

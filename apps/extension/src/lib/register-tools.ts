@@ -96,7 +96,7 @@ export async function runRegistrationPass(
         execute = (params) => executeApiTool({ ...tool, execution }, api, params);
       } else {
         execute = (params) =>
-          executeDomTool(tool, params, {
+          executeDomTool({ ...tool, execution }, params, {
             document: deps.getDocument(),
             registrationUrl: url,
             signal,

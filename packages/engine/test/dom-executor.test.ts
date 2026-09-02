@@ -1,18 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseHTML } from "linkedom";
 import { toolDescriptorSchema } from "@webmcp-today/schema";
-import { executeDomTool } from "../src/dom-executor.js";
+import { executeDomTool, type DomToolDescriptor } from "../src/dom-executor.js";
 
 const URL = "https://example.com/checkout";
 
-function tool(observations: Record<string, unknown>) {
-  return toolDescriptorSchema.parse({
+function tool(observations: Record<string, unknown>): DomToolDescriptor {
+  const parsed = toolDescriptorSchema.parse({
     name: "checkout_status",
     description: "Read checkout status.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execution: { mode: "dom", observations },
   });
+  if (parsed.execution.mode !== "dom") throw new Error("expected DOM tool descriptor");
+  return { ...parsed, execution: parsed.execution };
 }
 
 function page(html: string, url = URL) {
